@@ -19,7 +19,7 @@ Please adapt all absolute loading/saving and software paths within the scripts t
 
 # Content Overview:
 * /CNN - Python Code
-
+Verweis auf BeaysOpti Packet welches genutzt wird (im Paper drin?)
 
 
 
