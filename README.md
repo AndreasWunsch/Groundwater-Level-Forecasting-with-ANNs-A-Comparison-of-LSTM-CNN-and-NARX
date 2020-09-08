@@ -10,9 +10,9 @@ This repository enables you to reproduce the results and apply the groundwater l
 Contact: [andreas.wunsch@kit.edu](andreas.wunsch@kit.edu)
 
 ORCIDs of authors:
-A. Wunsch:  [0000-0002-0585-9549](https://orcid.org/)
-T. Liesch:  [0000-0001-8648-5333](https://orcid.org/)
-S. Broda:  [0000-0001-6858-6368](https://orcid.org/)
+A. Wunsch:  [0000-0002-0585-9549](https://orcid.org/0000-0002-0585-9549)   
+T. Liesch:  [0000-0001-8648-5333](https://orcid.org/0000-0001-8648-5333)   
+S. Broda:  [0000-0001-6858-6368](https://orcid.org/0000-0001-6858-6368)   
 
 For a detailed description please refer to the publication.
 Please adapt all absolute loading/saving and software paths within the scripts to make them running, you need Matlab and Python software for  a successful application.
