@@ -15,7 +15,7 @@ T. Liesch:  [0000-0001-8648-5333](https://orcid.org/0000-0001-8648-5333)
 S. Broda:  [0000-0001-6858-6368](https://orcid.org/0000-0001-6858-6368)   
 
 For a detailed description please refer to the publication.
-Please adapt all absolute loading/saving and software paths within the scripts to make them running, you need Matlab and Python software for  a successful application.
+Please adapt all absolute loading/saving and software paths within the scripts to make them running, you need Matlab and Python software for  a successful application. We further use the Python Package [BayesianOptimization](https://github.com/fmfn/BayesianOptimization) by [fmfn](https://github.com/fmfn). To run the Python Code please download and install this package.
 
 ### Content Overview:
 * /CNN - Python Code   
@@ -26,6 +26,3 @@ Contains Python scripts of the models and necessary example files.
 
 * /NARX - Matlab Code   
 Contains Matlab scripts of the models and necessary example files.
-
-### General remarks
-We use the Python Package [BayesianOptimization](https://github.com/fmfn/BayesianOptimization) by [fmfn](https://github.com/fmfn). To run the Python Code please download and install this package.
