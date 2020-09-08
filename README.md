@@ -18,13 +18,13 @@ For a detailed description please refer to the publication.
 Please adapt all absolute loading/saving and software paths within the scripts to make them running, you need Matlab and Python software for  a successful application.
 
 ### Content Overview:
-* /CNN - Python Code
+* /CNN - Python Code   
 Contains Python scripts of the models and necessary example files.
 
-* /LSTM - Python Code
+* /LSTM - Python Code   
 Contains Python scripts of the models and necessary example files.
 
-* /NARX - Matlab Code
+* /NARX - Matlab Code   
 Contains Matlab scripts of the models and necessary example files.
 
 ### General remarks
