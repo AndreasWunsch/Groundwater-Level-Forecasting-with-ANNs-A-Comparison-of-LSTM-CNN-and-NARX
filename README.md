@@ -1,6 +1,6 @@
 # Groundwater Level Forecasting with ANNs: A Comparison of LSTM CNN and NARX
 doi of this repo:  
-v1.0 [![DOI](https://zenodo.org/badge/290500651.svg)](https://zenodo.org/badge/latestdoi/290500651)   
+[![DOI](https://zenodo.org/badge/290500651.svg)](https://zenodo.org/badge/latestdoi/290500651)   
 
 doi of according publication:
 XXXX - will be added once published
