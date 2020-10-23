@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jul  1 13:02:54 2020
+updated on Thu Oct 15 17:46:03 2020
 
 @author: Andreas Wunsch
 """
@@ -15,7 +16,7 @@ import numpy as np
 from bayes_opt import BayesianOptimization
 from bayes_opt.logger import JSONLogger
 from bayes_opt.event import Events
-# from bayes_opt.util import load_logs #needed for: load existing optimizer states
+from bayes_opt.util import load_logs
 import os
 import glob
 import pandas as pd
@@ -24,13 +25,7 @@ import datetime
 from scipy import stats
 from matplotlib import pyplot
 from sklearn.preprocessing import MinMaxScaler
-# from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
-tf.config.optimizer.set_jit(True)
-
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
-policy = mixed_precision.Policy('mixed_float16')
-mixed_precision.set_policy(policy)
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 
@@ -159,11 +154,11 @@ def bayesOpt_function_with_discrete_params(pp,hiddensize_int, seqlength_int, bat
     
     # inputs
     if rH == 0:
-        data.drop(columns='rH')
+        data = data.drop(columns='rH')
     if T == 0:
-        data.drop(columns='T')
+        data = data.drop(columns='T')
     if Tsin == 0:
-        data.drop(columns='Tsin')
+        data = data.drop(columns='Tsin')
         
     #scale data
     scaler = MinMaxScaler(feature_range=(-1, 1))
@@ -264,11 +259,11 @@ def simulate_testset(pp,hiddensize_int, seqlength_int, batchsize_int, rH, T, Tsi
     
     # inputs
     if rH == 0:
-        data.drop(columns='rH')
+        data = data.drop(columns='rH')
     if T == 0:
-        data.drop(columns='T')
+        data = data.drop(columns='T')
     if Tsin == 0:
-        data.drop(columns='Tsin')
+        data = data.drop(columns='Tsin')
         
     #scale data
     scaler = MinMaxScaler(feature_range=(-1, 1))
@@ -376,6 +371,13 @@ def simulate_testset(pp,hiddensize_int, seqlength_int, batchsize_int, rH, T, Tsi
 
     return scores, TestData, inimax, testresults_members, test_sim_median, Well_ID
 
+class newJSONLogger(JSONLogger) :
+
+      def __init__(self, path):
+            self._path=None
+            super(JSONLogger, self).__init__()
+            self._path = path if path[-5:] == ".json" else path + ".json"
+
 """###########################################################################
 
 above only functions
@@ -412,23 +414,28 @@ with tf.device("/gpu:0"):
             verbose = 0 # verbose = 1 prints only when a maximum is observed, verbose = 0 is silent, verbose = 2 prints everything
             )
         
-        # #load existing optimizer
-        # load_logs(optimizer, logs=["./logs_LSTM_seq2seq_"+Well_ID+".json"]);
-        # print("\nExisting optimizer is already aware of {} points.".format(len(optimizer.space)))
-        
+        #load existing optimizer
+        log_already_available = 0
+        if os.path.isfile("./logs_LSTM_seq2seq_"+Well_ID+".json"):
+            load_logs(optimizer, logs=["./logs_LSTM_seq2seq_"+Well_ID+".json"]);
+            print("\nExisting optimizer is already aware of {} points.".format(len(optimizer.space)))
+            log_already_available = 1
+            
         # Saving progress
-        logger = JSONLogger(path="./logs_LSTM_seq2seq_"+Well_ID+".json")
+        logger = newJSONLogger(path="./logs_LSTM_seq2seq_"+Well_ID+".json")
         optimizer.subscribe(Events.OPTIMIZATION_STEP, logger)
         
         # random exploration as a start
         f = open('./timelog_LSTM_seq2seq_'+Well_ID+'.txt', "w")
         print("Starttime of first iteration: {}\n".format(datetime.datetime.now()), file = f)#this is not looged in json file
-        optimizer.maximize(
-                init_points=12, #steps of random exploration
-                n_iter=0, # steps of bayesian optimization
-                acq="ei",# ei  = expected improvmenet (probably the most common acquisition function) 
-                xi=0.05  #  Prefer exploitation (xi=0.0) / Prefer exploration (xi=0.1)
-                )
+        
+        if log_already_available == 0:
+            optimizer.maximize(
+                    init_points=25, #steps of random exploration (random starting points before bayesopt(?))
+                    n_iter=0, # steps of bayesian optimization
+                    acq="ei",# ei  = expected improvmenet (probably the most common acquisition function) 
+                    xi=0.05  #  Prefer exploitation (xi=0.0) / Prefer exploration (xi=0.1)
+                    )
         
         # optimize while improvement during last 10 steps!
         current_step = len(optimizer.res)
@@ -438,7 +445,7 @@ with tf.device("/gpu:0"):
             step = step + 1
             beststep = optimizer.res[step] == optimizer.max #search for best iteration step
     
-        while current_step < 25: #below < 25 iterations, no termination
+        while current_step < 50: #below < 50 iterations, no termination
                 current_step = len(optimizer.res)
                 beststep = False
                 step = -1
@@ -453,7 +460,7 @@ with tf.device("/gpu:0"):
                     xi=0.05  #  Prefer exploitation (xi=0.0) / Prefer exploration (xi=0.1)
                     )
                 
-        while (step + 10 > current_step and current_step < 50): # termination after 50 steps or after 10 steps without improvement
+        while (step + 20 > current_step and current_step < 150): # termination after 50 steps or after 10 steps without improvement
                 current_step = len(optimizer.res)
                 beststep = False
                 step = -1
@@ -492,7 +499,6 @@ with tf.device("/gpu:0"):
         
         # plot Test-Section
         
-        # pyplot.figure(figsize=(16,4))
         pyplot.figure(figsize=(15,6))
         for i in range(0,testresults_members.shape[1]):
             for ii in range(0,testresults_members.shape[2]):
@@ -514,7 +520,6 @@ out_seqlength = {:d}\nbatchsize = {:d}\nrH = {:d}\nT = {:d}\nTsin = {:d}""".form
         scores.RMSE[0],scores.rRMSE[0],scores.Bias[0],scores.rBias[0],scores.PI[0],
         hiddensize_int,seqlength_int,12,batchsize_int,rH,T,Tsin)
 
-        # pyplot.figtext(0.865, 0.18, s, bbox=dict(facecolor='white'))
         pyplot.figtext(0.856, 0.4, s, bbox=dict(facecolor='white'))
         pyplot.savefig(Well_ID+'_testset_LSTM_seq2seq.png', dpi=300)
         pyplot.show()
@@ -527,3 +532,8 @@ out_seqlength = {:d}\nbatchsize = {:d}\nrH = {:d}\nT = {:d}\nTsin = {:d}""".form
         for i, res in enumerate(optimizer.res):
             print("Iteration {}: \t{}".format(i+1, res), file = f) 
         f.close()
+        
+        #print sim data
+        for i in range(inimax):
+            printdf = pd.DataFrame(data=testresults_members[:,:,i],index=TestData.index)
+            printdf.to_csv("./ensemble_member"+str(i) +"_values_LSTM_"+Well_ID+'.txt',sep=';', float_format = '%.4f')

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 29 14:20:25 2020
+Updated on Thu Oct 15 14:21:00 2020
 
 @author: Andreas Wunsch
 """
@@ -14,7 +15,7 @@ import numpy as np
 from bayes_opt import BayesianOptimization
 from bayes_opt.logger import JSONLogger
 from bayes_opt.event import Events
-# from bayes_opt.util import load_logs #needed for: load existing optimizer states
+from bayes_opt.util import load_logs
 import os
 import glob
 import pandas as pd
@@ -23,13 +24,7 @@ import datetime
 from scipy import stats
 from matplotlib import pyplot
 from sklearn.preprocessing import MinMaxScaler
-# from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
-tf.config.optimizer.set_jit(True)
-
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
-policy = mixed_precision.Policy('mixed_float16')
-mixed_precision.set_policy(policy)
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 
@@ -156,11 +151,11 @@ def bayesOpt_function_with_discrete_params(pp,densesize_int, seqlength_int, batc
         
     # inputs
     if rH == 0:
-        data.drop(columns='rH')
+        data = data.drop(columns='rH')
     if T == 0:
-        data.drop(columns='T')
+        data = data.drop(columns='T')
     if Tsin == 0:
-        data.drop(columns='Tsin')
+        data = data.drop(columns='Tsin')
         
     #scale data
     scaler = MinMaxScaler(feature_range=(-1, 1))
@@ -236,11 +231,11 @@ def simulate_testset(pp,densesize_int, seqlength_int, batchsize_int, filters_int
     
     # inputs
     if rH == 0:
-        data.drop(columns='rH')
+        data = data.drop(columns='rH')
     if T == 0:
-        data.drop(columns='T')
+        data = data.drop(columns='T')
     if Tsin == 0:
-        data.drop(columns='Tsin')
+        data = data.drop(columns='Tsin')
         
     #scale data
     scaler = MinMaxScaler(feature_range=(-1, 1))
@@ -314,7 +309,15 @@ def simulate_testset(pp,densesize_int, seqlength_int, batchsize_int, filters_int
         errors[i,5] = np.mean(err_rel) * 100
         errors[i,6] = 1 - ((np.sum(err ** 2)) / (np.sum((err_PI) ** 2)))
     
+    sim = np.asarray(test_sim_median.reshape(-1,1))
     return scores, TestData, sim, obs, inimax, testresults_members, Well_ID, errors
+
+class newJSONLogger(JSONLogger) :
+
+      def __init__(self, path):
+            self._path=None
+            super(JSONLogger, self).__init__()
+            self._path = path if path[-5:] == ".json" else path + ".json"
 
 """###########################################################################
 
@@ -353,23 +356,28 @@ with tf.device("/cpu:0"):
             verbose = 0 # verbose = 1 prints only when a maximum is observed, verbose = 0 is silent, verbose = 2 prints everything
             )
         
-        # #load existing optimizer
-        # load_logs(optimizer, logs=["./logs_CNN_"+Well_ID+".json"]);
-        # print("\nExisting optimizer is already aware of {} points.".format(len(optimizer.space)))
+        #load existing optimizer
+        log_already_available = 0
+        if os.path.isfile("./logs_CNN_"+Well_ID+".json"):
+            load_logs(optimizer, logs=["./logs_CNN_"+Well_ID+".json"]);
+            print("\nExisting optimizer is already aware of {} points.".format(len(optimizer.space)))
+            log_already_available = 1
         
         # Save progress
-        logger = JSONLogger(path="./logs_CNN_"+Well_ID+".json")
+        logger = newJSONLogger(path="./logs_CNN_"+Well_ID+".json")
         optimizer.subscribe(Events.OPTIMIZATION_STEP, logger)
         
         # random exploration as a start
         f = open('./timelog_CNN_'+Well_ID+'.txt', "w")
         print("Starttime of first iteration: {}\n".format(datetime.datetime.now()), file = f)#this is not looged in json file
-        optimizer.maximize(
-                init_points=12, #steps of random exploration
-                n_iter=0, # steps of bayesian optimization
-                acq="ei",# ei  = expected improvmenet (probably the most common acquisition function) 
-                xi=0.05  #  Prefer exploitation (xi=0.0) / Prefer exploration (xi=0.1)
-                )
+        
+        if log_already_available == 0:
+            optimizer.maximize(
+                    init_points=25, #steps of random exploration (random starting points before bayesopt(?))
+                    n_iter=0, # steps of bayesian optimization
+                    acq="ei",# ei  = expected improvmenet (probably the most common acquisition function) 
+                    xi=0.05  #  Prefer exploitation (xi=0.0) / Prefer exploration (xi=0.1)
+                    )
         
         # optimize while improvement during last 10 steps!
         current_step = len(optimizer.res)
@@ -379,7 +387,7 @@ with tf.device("/cpu:0"):
             step = step + 1
             beststep = optimizer.res[step] == optimizer.max #search for best iteration step
     
-        while current_step < 25: #below < 25 iterations, no termination
+        while current_step < 50: #below < 50 iterations, no termination
                 current_step = len(optimizer.res)
                 beststep = False
                 step = -1
@@ -394,7 +402,7 @@ with tf.device("/cpu:0"):
                     xi=0.05  #  Prefer exploitation (xi=0.0) / Prefer exploration (xi=0.1)
                     )
                 
-        while (step + 10 > current_step and current_step < 50): # termination after 50 steps or after 10 steps without improvement
+        while (step + 20 > current_step and current_step < 150): # termination after 150 steps or after 20 steps without improvement
                 current_step = len(optimizer.res)
                 beststep = False
                 step = -1
@@ -467,4 +475,8 @@ batchsize = {:d}\nrH = {:d}\nT = {:d}\nTsin = {:d}""".format(scores.NSE[0],score
         
         #print ensemble member errors
         np.savetxt('./ensemble_member_errors_CNN_'+Well_ID+'.txt',errors,delimiter=';',header = 'NSE;R²;RMSE;rRMSE;Bias;rBias;PI', fmt = '%.4f')
+        
+        #print sim data
+        printdf = pd.DataFrame(data=testresults_members,index=TestData.index)
+        printdf.to_csv('./ensemble_member_values_CNN_'+Well_ID+'.txt',sep=';')
         

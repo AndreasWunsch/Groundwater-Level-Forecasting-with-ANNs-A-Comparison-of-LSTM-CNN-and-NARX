@@ -82,7 +82,7 @@ for w = 1:size(Well_IDs,1)
         'AcquisitionFunctionName','expected-improvement',...%-per-second-plus',...
         'ConditionalVariableFcn',@condvariablefcn,...
         'OutputFcn',@customOutputFun,...
-        'MaxObjectiveEvaluations',50);
+        'MaxObjectiveEvaluations',150);
     
     
     %% Test on independent dataset
@@ -477,9 +477,9 @@ stop = false;
 switch state
     case 'initial'
     case 'iteration'
-        if size(results.ObjectiveTrace,1) > 25 %mindestens 25 iterationen bevor Abbruchkriterium
+        if size(results.ObjectiveTrace,1) > 50 %at least 50 iterations before termination criterion
             minpos = find(results.ObjectiveTrace == min(results.ObjectiveTrace));
-            if size(results.ObjectiveTrace,1)-minpos > 10 %wenn nach 10 Iterationen keine Verbesserung, dann Abbruch
+            if size(results.ObjectiveTrace,1)-minpos > 20 %if after 20 iterations no improvement, then abort
                 stop = true;
             end
         end
