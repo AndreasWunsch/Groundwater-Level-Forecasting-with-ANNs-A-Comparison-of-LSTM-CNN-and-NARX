@@ -5,7 +5,7 @@ doi of this repo:
 doi of according publication:
 https://doi.org/10.5194/hess-25-1671-202
 
-This repository enables you to reproduce the results and apply the groundwater level forecasting mehtodology of:     
+This repository enables you to reproduce the results and apply the groundwater level forecasting methodology of:     
 *Wunsch, A., Liesch, T., Broda, S., Groundwater level forecasting with artificial neural networks: a comparison of long short-term memory (LSTM), convolutional neural networks (CNNs), and non-linear autoregressive networks with exogenous input (NARX)*
 
 Contact: [andreas.wunsch@kit.edu](andreas.wunsch@kit.edu)
